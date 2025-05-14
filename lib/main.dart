@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/home/home_screen.dart';
 import 'blocs/auth/auth_event.dart';
 import 'blocs/auth/auth_state.dart';
+import 'blocs/voucher/voucher_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => ParkingLotBloc(CloudinaryPublic('dqnbclzi5', 'avatar_img', cache: false)),
+        ),
+        BlocProvider(
+          create: (_) => VoucherBloc(),
         ),
       ],
       child: MaterialApp(
