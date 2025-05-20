@@ -4,9 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/discount_code.dart';
-import '../../blocs/voucher/voucher_bloc.dart';
-import '../../blocs/voucher/voucher_event.dart';
-import '../../blocs/voucher/voucher_state.dart';
+import '../../blocs/discount/discount_bloc.dart';
+import '../../blocs/discount/discount_event.dart';
+import '../../blocs/discount/discount_state.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class DiscountScreen extends StatelessWidget {
   const DiscountScreen({Key? key}) : super(key: key);
@@ -38,14 +39,14 @@ class DiscountScreen extends StatelessWidget {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('Gửi thông báo'),
+                            title: Text(tr('send_notification')),
                             content: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('Bạn có muốn gửi thông báo về mã giảm giá này cho tất cả người dùng không?'),
+                                Text(tr('confirm_send_notification')),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Mã giảm giá: ${discount.code}\nGiảm giá: ${discount.discountPercent}%',
+                                  tr('discount_info', args: [discount.code, discount.discountPercent.toString()]),
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ],
@@ -57,17 +58,16 @@ class DiscountScreen extends StatelessWidget {
                               ),
                               ElevatedButton(
                                 onPressed: () {
-                                  context.read<VoucherBloc>().add(
-                                        SendNotification(
-                                          userId: 'all',
-                                          title: 'Mã giảm giá mới',
-                                          body: 'Bạn có mã giảm giá mới: ${discount.code} với ${discount.discountPercent}% giảm giá',
+                                  context.read<DiscountBloc>().add(
+                                        SendDiscountNotification(
+                                          code: discount.code,
+                                          discountPercent: discount.discountPercent,
                                         ),
                                       );
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Đã gửi thông báo cho tất cả người dùng'),
+                                     SnackBar(
+                                      content: Text(tr('notification_sent')),
                                     ),
                                   );
                                 },
@@ -85,8 +85,8 @@ class DiscountScreen extends StatelessWidget {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('Xóa mã giảm giá'),
-                            content: Text('Bạn có chắc chắn muốn xóa mã giảm giá ${discount.code} không?'),
+                            title: Text(tr('delete_discount_title')),
+                            content: Text(tr('confirm_delete_discount', args: [discount.code])),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
@@ -97,15 +97,13 @@ class DiscountScreen extends StatelessWidget {
                                   backgroundColor: Colors.red,
                                 ),
                                 onPressed: () {
-                                  context.read<VoucherBloc>().add(
-                                        DeleteVoucher(
-                                          voucherId: discount.id,
-                                        ),
+                                  context.read<DiscountBloc>().add(
+                                        DeleteDiscount(discount.id),
                                       );
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Đã xóa mã giảm giá'),
+                                     SnackBar(
+                                      content: Text(tr('discount_deleted')),
                                     ),
                                   );
                                 },
@@ -120,9 +118,9 @@ class DiscountScreen extends StatelessWidget {
                     Switch(
                       value: discount.isActive,
                       onChanged: (value) {
-                        context.read<VoucherBloc>().add(
-                              UpdateVoucherStatus(
-                                voucherId: discount.id,
+                        context.read<DiscountBloc>().add(
+                              UpdateDiscountStatus(
+                                discountId: discount.id,
                                 isActive: value,
                                 parkingLotId: discount.parkingLotId,
                               ),
@@ -135,17 +133,17 @@ class DiscountScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Giảm giá: ${discount.discountPercent}%',
+              tr('discount_percent', args: [discount.discountPercent.toString()]),
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
-              'Hạn sử dụng: ${discount.expiresAt.toDate().toString().split('.')[0]}',
+              tr('expires_at', args: [discount.expiresAt.toDate().toString().split('.')[0]]),
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
-              'Đã sử dụng: ${discount.usedCount}/${discount.usageLimit}',
+              tr('usage_count', args: [discount.usedCount.toString(), discount.usageLimit.toString()]),
               style: const TextStyle(fontSize: 16),
             ),
           ],
@@ -162,82 +160,85 @@ class DiscountScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tạo mã giảm giá mới'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Mã giảm giá',
-                  hintText: 'Nhập mã giảm giá',
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<DiscountBloc>(),
+        child: AlertDialog(
+          title: Text(tr('create_new_discount')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: codeController,
+                  decoration: InputDecoration(
+                    labelText: tr('discount_code'),
+                    hintText: tr('enter_discount_code'),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: discountController,
-                decoration: const InputDecoration(
-                  labelText: 'Phần trăm giảm giá',
-                  hintText: 'Nhập phần trăm giảm giá',
+                const SizedBox(height: 16),
+                TextField(
+                  controller: discountController,
+                  decoration: InputDecoration(
+                    labelText: tr('discount_percent'),
+                    hintText: tr('enter_discount_percent'),
+                  ),
+                  keyboardType: TextInputType.number,
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: usageLimitController,
-                decoration: const InputDecoration(
-                  labelText: 'Giới hạn sử dụng',
-                  hintText: 'Nhập số lần sử dụng tối đa',
+                const SizedBox(height: 16),
+                TextField(
+                  controller: usageLimitController,
+                  decoration: InputDecoration(
+                    labelText: tr('usage_limit'),
+                    hintText: tr('enter_usage_limit'),
+                  ),
+                  keyboardType: TextInputType.number,
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Ngày hết hạn'),
-                subtitle: Text(selectedDate.toString().split('.')[0]),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (date != null) {
-                    selectedDate = date;
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (codeController.text.isNotEmpty &&
-                  discountController.text.isNotEmpty &&
-                  usageLimitController.text.isNotEmpty) {
-                context.read<VoucherBloc>().add(
-                      CreateVoucher(
-                        code: codeController.text,
-                        discountPercent: int.parse(discountController.text),
-                        expiresAt: selectedDate,
-                        usageLimit: int.parse(usageLimitController.text),
-                        parkingLotId: parkingLotId,
-                      ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: Text(tr('expiry_date')),
+                  subtitle: Text(selectedDate.toString().split('.')[0]),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: dialogContext,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Tạo'),
+                    if (date != null) {
+                      selectedDate = date;
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (codeController.text.isNotEmpty &&
+                    discountController.text.isNotEmpty &&
+                    usageLimitController.text.isNotEmpty) {
+                  context.read<DiscountBloc>().add(
+                        CreateDiscount(
+                          code: codeController.text,
+                          discountPercent: int.parse(discountController.text),
+                          expiresAt: selectedDate,
+                          usageLimit: int.parse(usageLimitController.text),
+                          parkingLotId: parkingLotId,
+                        ),
+                      );
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: Text(tr('create')),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -247,10 +248,23 @@ class DiscountScreen extends StatelessWidget {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return BlocProvider(
-      create: (context) => VoucherBloc()..add(LoadVouchers(userId)),
+      create: (context) {
+        final bloc = DiscountBloc();
+        // Load dữ liệu sau khi có parkingLotId
+        FirebaseFirestore.instance
+            .collection('parking_lots')
+            .where('oid', isEqualTo: userId)
+            .get()
+            .then((snapshot) {
+          if (snapshot.docs.isNotEmpty) {
+            bloc.add(LoadDiscounts(snapshot.docs.first.id));
+          }
+        });
+        return bloc;
+      },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Mã giảm giá'),
+          title: Text(tr('discount_title')),
         ),
         body: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
@@ -263,18 +277,18 @@ class DiscountScreen extends StatelessWidget {
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(child: Text('Không tìm thấy bãi đỗ xe'));
+              return Center(child: Text(tr('no_parking_found')));
             }
 
             final parkingLotId = snapshot.data!.docs.first.id;
 
-            return BlocBuilder<VoucherBloc, VoucherState>(
+            return BlocBuilder<DiscountBloc, DiscountState>(
               builder: (context, state) {
-                if (state is VoucherLoading) {
+                if (state is DiscountLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (state is VoucherError) {
+                if (state is DiscountError) {
                   return Center(
                     child: Text(
                       state.message,
@@ -283,8 +297,8 @@ class DiscountScreen extends StatelessWidget {
                   );
                 }
 
-                if (state is VoucherLoaded) {
-                  if (state.vouchers.isEmpty) {
+                if (state is DiscountLoaded) {
+                  if (state.discounts.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -292,7 +306,7 @@ class DiscountScreen extends StatelessWidget {
                           Icon(Icons.discount, size: 64, color: Colors.grey.shade400),
                           const SizedBox(height: 16),
                           Text(
-                            'Chưa có mã giảm giá nào',
+                            tr('no_discounts'),
                             style: GoogleFonts.montserrat(
                               fontSize: 18,
                               color: Colors.grey.shade600,
@@ -305,9 +319,9 @@ class DiscountScreen extends StatelessWidget {
 
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    itemCount: state.vouchers.length,
+                    itemCount: state.discounts.length,
                     itemBuilder: (context, index) {
-                      return _buildDiscountCard(context, state.vouchers[index]);
+                      return _buildDiscountCard(context, state.discounts[index]);
                     },
                   );
                 }

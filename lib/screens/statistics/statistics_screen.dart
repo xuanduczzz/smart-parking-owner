@@ -34,6 +34,7 @@ class StatisticsScreen extends StatelessWidget {
           }
 
           final parkingLotId = snapshot.data!.docs.first.id;
+          print('Parking Lot ID: $parkingLotId');
 
           return BlocProvider(
             create: (context) => StatisticsBloc()
@@ -100,166 +101,173 @@ class StatisticsScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Column(
-                          children: [
-                            SizedBox(
-                              height: 300,
-                              child: BarChart(
-                                BarChartData(
-                                  alignment: BarChartAlignment.spaceAround,
-                                  maxY: state.reservationsByPeriod.values
-                                      .reduce((a, b) => a > b ? a : b)
-                                      .toDouble(),
-                                  barGroups: state.reservationsByPeriod.entries
-                                      .map((entry) {
-                                    return BarChartGroupData(
-                                      x: state.reservationsByPeriod.keys
-                                          .toList()
-                                          .indexOf(entry.key),
-                                      barRods: [
-                                        BarChartRodData(
-                                          toY: entry.value.toDouble(),
-                                          color: Colors.blue,
-                                          width: 20,
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        getTitlesWidget: (value, meta) {
-                                          if (value >= 0 &&
-                                              value <
-                                                  state.reservationsByPeriod
-                                                      .length) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 8.0),
-                                              child: Text(
-                                                state.reservationsByPeriod.keys
-                                                    .elementAt(value.toInt()),
-                                                style: const TextStyle(
-                                                    fontSize: 10),
-                                              ),
-                                            );
-                                          }
-                                          return const Text('');
-                                        },
+                        if (state.reservationsByPeriod.isNotEmpty) ...[
+                          SizedBox(
+                            height: 300,
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: state.reservationsByPeriod.values
+                                    .reduce((a, b) => a > b ? a : b)
+                                    .toDouble(),
+                                barGroups: state.reservationsByPeriod.entries
+                                    .map((entry) {
+                                  return BarChartGroupData(
+                                    x: state.reservationsByPeriod.keys
+                                        .toList()
+                                        .indexOf(entry.key),
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: entry.value.toDouble(),
+                                        color: Colors.blue,
+                                        width: 20,
                                       ),
-                                    ),
-                                    leftTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 40,
-                                      ),
-                                    ),
-                                    topTitles: AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
-                                    rightTitles: AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Doanh thu theo ${state.selectedPeriod}',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              height: 300,
-                              child: BarChart(
-                                BarChartData(
-                                  alignment: BarChartAlignment.spaceAround,
-                                  maxY: state.revenueByPeriod.values
-                                      .reduce((a, b) => a > b ? a : b),
-                                  barGroups: state.revenueByPeriod.entries
-                                      .map((entry) {
-                                    return BarChartGroupData(
-                                      x: state.revenueByPeriod.keys
-                                          .toList()
-                                          .indexOf(entry.key),
-                                      barRods: [
-                                        BarChartRodData(
-                                          toY: entry.value,
-                                          color: Colors.green,
-                                          width: 20,
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        getTitlesWidget: (value, meta) {
-                                          if (value >= 0 &&
-                                              value <
-                                                  state.revenueByPeriod.length) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 8.0),
-                                              child: Text(
-                                                state.revenueByPeriod.keys
-                                                    .elementAt(value.toInt()),
-                                                style: const TextStyle(
-                                                    fontSize: 10),
-                                              ),
-                                            );
-                                          }
-                                          return const Text('');
-                                        },
-                                      ),
-                                    ),
-                                    leftTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 60,
-                                        getTitlesWidget: (value, meta) {
+                                    ],
+                                  );
+                                }).toList(),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        if (value >= 0 &&
+                                            value <
+                                                state.reservationsByPeriod
+                                                    .length) {
                                           return Padding(
                                             padding: const EdgeInsets.only(
-                                                right: 8.0),
+                                                top: 8.0),
                                             child: Text(
-                                              value.toInt().toString(),
+                                              state.reservationsByPeriod.keys
+                                                  .elementAt(value.toInt()),
                                               style: const TextStyle(
                                                   fontSize: 10),
                                             ),
                                           );
-                                        },
-                                      ),
+                                        }
+                                        return const Text('');
+                                      },
                                     ),
-                                    topTitles: AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 40,
                                     ),
-                                    rightTitles: AxisTitles(
-                                      sideTitles: SideTitles(showTitles: false),
-                                    ),
+                                  ),
+                                  topTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Center(
-                              child: Text(
-                                'Đơn vị: VNĐ',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                        if (state.revenueByPeriod.isNotEmpty) ...[
+                          Text(
+                            'Doanh thu theo ${state.selectedPeriod}',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 300,
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: state.revenueByPeriod.values
+                                    .reduce((a, b) => a > b ? a : b),
+                                barGroups: state.revenueByPeriod.entries
+                                    .map((entry) {
+                                  return BarChartGroupData(
+                                    x: state.revenueByPeriod.keys
+                                        .toList()
+                                        .indexOf(entry.key),
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: entry.value,
+                                        color: Colors.green,
+                                        width: 20,
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        if (value >= 0 &&
+                                            value <
+                                                state.revenueByPeriod.length) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                                top: 8.0),
+                                            child: Text(
+                                              state.revenueByPeriod.keys
+                                                  .elementAt(value.toInt()),
+                                              style: const TextStyle(
+                                                  fontSize: 10),
+                                            ),
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 60,
+                                      getTitlesWidget: (value, meta) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: 8.0),
+                                          child: Text(
+                                            value.toInt().toString(),
+                                            style: const TextStyle(
+                                                fontSize: 10),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  topTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: Text(
+                              'Đơn vị: VNĐ',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (state.reservationsByPeriod.isEmpty && state.revenueByPeriod.isEmpty)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text('Không có dữ liệu thống kê'),
+                            ),
+                          ),
                       ],
                     ),
                   );

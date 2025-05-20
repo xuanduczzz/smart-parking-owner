@@ -11,6 +11,7 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'enter_slots_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class AddParkingLotScreen extends StatefulWidget {
   final bool isEditing;
@@ -225,14 +226,14 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
         listener: (context, state) {
           if (state is ParkingLotSuccess) {
             Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lưu bãi đỗ thành công!')));
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('save_parking_lot_success'))));
           } else if (state is ParkingLotError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         child: Scaffold(
           appBar: AppBar(
-            title: Text(widget.isEditing ? 'Chỉnh sửa bãi đỗ xe' : 'Thêm bãi đỗ xe'),
+            title: Text(widget.isEditing ? tr('edit_parking_lot') : tr('add_parking_lot')),
           ),
           body: _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -252,34 +253,34 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
                               TextFormField(
                                 controller: _nameController,
                                 decoration: InputDecoration(
-                                  labelText: 'Tên bãi đỗ',
+                                  labelText: tr('parking_lot_name'),
                                   prefixIcon: const Icon(Icons.local_parking),
                                 ),
                                 style: GoogleFonts.montserrat(fontSize: 16),
-                                validator: (v) => v == null || v.isEmpty ? 'Nhập tên bãi đỗ' : null,
+                                validator: (v) => v == null || v.isEmpty ? tr('enter_parking_lot_name') : null,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _addressController,
                                 decoration: InputDecoration(
-                                  labelText: 'Địa chỉ',
+                                  labelText: tr('address'),
                                   prefixIcon: const Icon(Icons.location_on),
                                 ),
                                 style: GoogleFonts.montserrat(fontSize: 16),
-                                validator: (v) => v == null || v.isEmpty ? 'Nhập địa chỉ' : null,
+                                validator: (v) => v == null || v.isEmpty ? tr('enter_address') : null,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _priceController,
                                 decoration: InputDecoration(
-                                  labelText: 'Giá/giờ',
+                                  labelText: tr('price_per_hour'),
                                   prefixIcon: const Icon(Icons.attach_money),
                                 ),
                                 keyboardType: TextInputType.number,
                                 style: GoogleFonts.montserrat(fontSize: 16),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Nhập giá/giờ';
-                                  if (double.tryParse(v) == null) return 'Giá/giờ phải là số';
+                                  if (v == null || v.isEmpty) return tr('enter_price_per_hour');
+                                  if (double.tryParse(v) == null) return tr('price_per_hour_must_be_number');
                                   return null;
                                 },
                               ),
@@ -289,15 +290,15 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _latController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Vĩ độ (lat)',
+                                      decoration: InputDecoration(
+                                        labelText: tr('latitude'),
                                         prefixIcon: Icon(Icons.my_location),
                                       ),
                                       keyboardType: TextInputType.number,
                                       style: GoogleFonts.montserrat(fontSize: 16),
                                       validator: (v) {
-                                        if (v == null || v.isEmpty) return 'Nhập vĩ độ';
-                                        if (double.tryParse(v) == null) return 'Vĩ độ phải là số';
+                                        if (v == null || v.isEmpty) return tr('enter_latitude');
+                                        if (double.tryParse(v) == null) return tr('latitude_must_be_number');
                                         return null;
                                       },
                                     ),
@@ -306,15 +307,15 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _lngController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Kinh độ (lng)',
+                                      decoration: InputDecoration(
+                                        labelText: tr('longitude'),
                                         prefixIcon: Icon(Icons.my_location),
                                       ),
                                       keyboardType: TextInputType.number,
                                       style: GoogleFonts.montserrat(fontSize: 16),
                                       validator: (v) {
-                                        if (v == null || v.isEmpty) return 'Nhập kinh độ';
-                                        if (double.tryParse(v) == null) return 'Kinh độ phải là số';
+                                        if (v == null || v.isEmpty) return tr('enter_longitude');
+                                        if (double.tryParse(v) == null) return tr('longitude_must_be_number');
                                         return null;
                                       },
                                     ),
@@ -324,20 +325,21 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
                               const SizedBox(height: 24),
                               _imagePreview(_imageFiles, _existingImageUrls, (i) {
                                 setState(() => _imageFiles.removeAt(i));
-                              }, 'Ảnh bãi đỗ xe (có thể chọn nhiều):'),
+                              }, tr('parking_images')),
                               TextButton.icon(
                                 onPressed: () => _pickImages(false),
                                 icon: const Icon(Icons.photo_library, color: Colors.blue),
-                                label: Text('Chọn ảnh bãi đỗ', style: GoogleFonts.montserrat(color: Colors.blue)),
+                                label: Text(tr('select_parking_images'), style: GoogleFonts.montserrat(color: Colors.blue)),
                               ),
                               const SizedBox(height: 24),
+
                               _imagePreview(_mapFiles, _existingMapUrls, (i) {
                                 setState(() => _mapFiles.removeAt(i));
-                              }, 'Ảnh sơ đồ bãi đỗ (có thể chọn nhiều):'),
+                              }, tr('select_map_images')),
                               TextButton.icon(
                                 onPressed: () => _pickImages(true),
                                 icon: const Icon(Icons.map, color: Colors.blue),
-                                label: Text('Chọn ảnh sơ đồ', style: GoogleFonts.montserrat(color: Colors.blue)),
+                                label: Text(tr('select_map_images'), style: GoogleFonts.montserrat(color: Colors.blue)),
                               ),
                               const SizedBox(height: 32),
                               BlocBuilder<ParkingLotBloc, ParkingLotState>(
@@ -352,11 +354,11 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
                                           : () {
                                               if (!_formKey.currentState!.validate()) return;
                                               if (_imageFiles.isEmpty && _existingImageUrls.isEmpty) {
-                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ít nhất 1 ảnh bãi đỗ')));
+                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('must_select_at_least_one_parking_image'))));
                                                 return;
                                               }
                                               if (_mapFiles.isEmpty && _existingMapUrls.isEmpty) {
-                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ít nhất 1 ảnh sơ đồ')));
+                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('must_select_at_least_one_map_image'))));
                                                 return;
                                               }
                                               Navigator.push(
@@ -383,7 +385,7 @@ class _AddParkingLotScreenState extends State<AddParkingLotScreen> {
                                             },
                                       label: isLoading
                                           ? const CircularProgressIndicator(color: Colors.white)
-                                          : Text('Tiếp tục', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
+                                          : Text(tr('continue'), style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.blue,
                                         foregroundColor: Colors.white,

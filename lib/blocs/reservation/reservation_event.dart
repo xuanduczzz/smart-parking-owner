@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 abstract class ReservationEvent extends Equatable {
   @override
@@ -35,4 +36,21 @@ class FilterReservationsEvent extends ReservationEvent {
 
   @override
   List<Object?> get props => [userId, lotId, startDate, endDate, status];
+}
+
+class UpdateReservationsEvent extends ReservationEvent {
+  final List<QueryDocumentSnapshot> docs;
+  UpdateReservationsEvent(this.docs);
+
+  @override
+  List<Object?> get props => [docs];
+}
+
+class LoadReviewEvent extends ReservationEvent {
+  final String reservationId;
+
+  LoadReviewEvent({required this.reservationId});
+
+  @override
+  List<Object?> get props => [reservationId];
 } 

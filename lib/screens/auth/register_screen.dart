@@ -59,7 +59,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<String?> _uploadImage(File? image) async {
     if (image == null) return null;
     try {
-      return await _cloudinaryService.uploadImage(image);
+      return await _cloudinaryService.uploadImageFromPath(
+        path: image.path,
+        imageQuality: 0.6,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi khi tải ảnh lên: ${e.toString()}')),

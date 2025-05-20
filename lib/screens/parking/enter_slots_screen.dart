@@ -6,6 +6,7 @@ import '../../blocs/parking_lot/parking_lot_bloc.dart';
 import '../../blocs/parking_lot/parking_lot_event.dart';
 import '../../blocs/parking_lot/parking_lot_state.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class EnterSlotsScreen extends StatefulWidget {
   final bool isEditing;
@@ -89,12 +90,12 @@ class _EnterSlotsScreenState extends State<EnterSlotsScreen> {
 
   void _saveAll() {
     if (_slotIdControllers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng thêm ít nhất 1 slot!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('must_add_at_least_one_slot'))));
       return;
     }
     for (var c in _slotIdControllers) {
       if (c.text.isEmpty || !RegExp(r'^[A-Z]').hasMatch(c.text)) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID slot phải bắt đầu bằng chữ in hoa!')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('slot_id_must_uppercase'))));
         return;
       }
     }
@@ -140,14 +141,14 @@ class _EnterSlotsScreenState extends State<EnterSlotsScreen> {
     return BlocListener<ParkingLotBloc, ParkingLotState>(
       listener: (context, state) {
         if (state is ParkingLotSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lưu thành công!')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('save_success'))));
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (state is ParkingLotError) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Nhập thông tin slot')),
+        appBar: AppBar(title: Text(tr('enter_slot_info'))),
         body: Padding(
           padding: const EdgeInsets.all(24),
           child: Card(
@@ -164,14 +165,14 @@ class _EnterSlotsScreenState extends State<EnterSlotsScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Danh sách slot',
+                            tr('slot_list'),
                             style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.blue.shade800),
                           ),
                         ),
                         ElevatedButton.icon(
                           onPressed: _addSlot,
                           icon: const Icon(Icons.add, color: Colors.white),
-                          label: Text('Thêm slot', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                          label: Text(tr('add_slot'), style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
@@ -197,13 +198,13 @@ class _EnterSlotsScreenState extends State<EnterSlotsScreen> {
                                   child: TextFormField(
                                     controller: _slotIdControllers[index],
                                     decoration: InputDecoration(
-                                      labelText: 'ID slot (A-Z...)',
+                                      labelText: tr('slot_id_hint'),
                                       prefixIcon: const Icon(Icons.event_seat),
                                     ),
                                     style: GoogleFonts.montserrat(fontSize: 16),
                                     validator: (value) {
-                                      if (value == null || value.isEmpty) return 'Nhập ID slot';
-                                      if (!RegExp(r'^[A-Z]').hasMatch(value)) return 'ID phải bắt đầu bằng chữ in hoa';
+                                      if (value == null || value.isEmpty) return tr('enter_slot_id');
+                                      if (!RegExp(r'^[A-Z]').hasMatch(value)) return tr('slot_id_uppercase');
                                       return null;
                                     },
                                   ),
@@ -229,7 +230,7 @@ class _EnterSlotsScreenState extends State<EnterSlotsScreen> {
                             onPressed: isLoading ? null : _saveAll,
                             label: isLoading
                                 ? const CircularProgressIndicator(color: Colors.white)
-                                : Text('Lưu tất cả', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
+                                : Text(tr('save_all'), style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -90,6 +91,52 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
   Future<void> _updateReservationStatus(BuildContext context, String reservationId, String status) async {
     try {
+      // Nếu đang chuyển từ checkin sang checkout, hiển thị dialog xác nhận
+      if (status == 'checkout') {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              'Xác nhận check-out',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade800,
+              ),
+            ),
+            content: Text(
+              'Bạn có chắc chắn muốn check-out cho đơn đặt này?',
+              style: GoogleFonts.montserrat(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Hủy',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Xác nhận',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed != true) {
+          return;
+        }
+      }
+
       // Cập nhật trạng thái trong Firestore
       await FirebaseFirestore.instance
           .collection('reservations')
@@ -121,133 +168,218 @@ class _ReservationScreenState extends State<ReservationScreen> {
     final vehicleId = reservation['vehicleId'] as String? ?? '';
     final status = reservation['status'] as String? ?? 'pending';
     final reservationId = doc.id;
+    final theme = Theme.of(context);
+
+    // Load review if status is completed
+    if (status == 'completed') {
+      _bloc.add(LoadReviewEvent(reservationId: reservationId));
+    }
 
     showDialog(
       context: context,
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Chi tiết đơn đặt',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade800,
+      builder: (dialogContext) => BlocProvider.value(
+        value: _bloc,
+        child: Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      tr('reservation_detail'),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(dialogContext),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 16),
-              _buildDetailRow(Icons.person, 'Họ tên:', name),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.phone, 'Số điện thoại:', phoneNumber),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.directions_car, 'Biển số xe:', vehicleId),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.event_seat, 'Slot:', slotId),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.access_time, 'Thời gian bắt đầu:', 
-                DateFormat('dd/MM/yyyy HH:mm').format(startTime)),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.access_time, 'Thời gian kết thúc:', 
-                DateFormat('dd/MM/yyyy HH:mm').format(endTime)),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.attach_money, 'Tổng tiền:', 
-                '${totalPrice.toStringAsFixed(0)} VNĐ'),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  if (status == 'pending') ...[
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Xác nhận'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(dialogContext);
-                        await _updateReservationStatus(dialogContext, reservationId, 'confirmed');
-                      },
-                    ),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.cancel),
-                      label: const Text('Hủy'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(dialogContext);
-                        await _updateReservationStatus(dialogContext, reservationId, 'cancelled');
-                      },
-                    ),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: status == 'confirmed' ? Colors.green.shade100 : Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        status == 'confirmed' ? 'Đã xác nhận' : 'Đã hủy',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 14,
-                          color: status == 'confirmed' ? Colors.green.shade900 : Colors.red.shade900,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(dialogContext),
                     ),
                   ],
+                ),
+                const Divider(),
+                const SizedBox(height: 16),
+                _buildDetailRow(context, Icons.person, tr('name') + ':', name),
+                const SizedBox(height: 12),
+                _buildDetailRow(context, Icons.phone, tr('phone') + ':', phoneNumber),
+                const SizedBox(height: 12),
+                _buildDetailRow(context, Icons.directions_car, tr('vehicle_plate') + ':', vehicleId),
+                const SizedBox(height: 12),
+                _buildDetailRow(context, Icons.event_seat, tr('slot') + ':', slotId),
+                const SizedBox(height: 12),
+                _buildDetailRow(context, Icons.access_time, tr('start_time') + ':', 
+                  DateFormat('dd/MM/yyyy HH:mm').format(startTime)),
+                const SizedBox(height: 12),
+                _buildDetailRow(context, Icons.access_time, tr('end_time') + ':', 
+                  DateFormat('dd/MM/yyyy HH:mm').format(endTime)),
+                const SizedBox(height: 12),
+                _buildDetailRow(context, Icons.attach_money, tr('total_price') + ':', 
+                  '${totalPrice.toStringAsFixed(0)} VNĐ'),
+                const SizedBox(height: 24),
+                if (status == 'completed') ...[
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Đánh giá',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildReviewSection(reservationId),
                 ],
-              ),
-            ],
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    if (status == 'pending') ...[
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Xác nhận'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await _updateReservationStatus(dialogContext, reservationId, 'confirmed');
+                        },
+                      ),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.cancel),
+                        label: const Text('Hủy'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await _updateReservationStatus(dialogContext, reservationId, 'cancelled');
+                        },
+                      ),
+                    ] else if (status == 'confirmed') ...[
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.login),
+                        label: const Text('Check-in'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await _updateReservationStatus(dialogContext, reservationId, 'checkin');
+                        },
+                      ),
+                    ] else if (status == 'checkin') ...[
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Check-out'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await _updateReservationStatus(dialogContext, reservationId, 'checkout');
+                        },
+                      ),
+                    ] else if (status == 'checkout') ...[
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('Kết thúc'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await _updateReservationStatus(dialogContext, reservationId, 'completed');
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildDetailRow(BuildContext context, IconData icon, String label, String value) {
+    final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(icon, color: Colors.blue, size: 20),
+        Icon(icon, color: theme.colorScheme.primary, size: 20),
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.montserrat(
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.blue.shade700,
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              color: Colors.black87,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       ],
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'confirmed':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      case 'checkin':
+        return Colors.green;
+      case 'checkout':
+        return Colors.purple;
+      case 'completed':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Chờ xác nhận';
+      case 'confirmed':
+        return 'Đã xác nhận';
+      case 'cancelled':
+        return 'Đã hủy';
+      case 'checkin':
+        return 'Đã check-in';
+      case 'checkout':
+        return 'Đã check-out';
+      case 'completed':
+        return 'Đã kết thúc';
+      default:
+        return status;
+    }
   }
 
   void _showFilterDialog() {
@@ -378,6 +510,18 @@ class _ReservationScreenState extends State<ReservationScreen> {
                     child: Text('Đã xác nhận'),
                   ),
                   const DropdownMenuItem(
+                    value: 'checkin',
+                    child: Text('Đã check-in'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'checkout',
+                    child: Text('Đã check-out'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'completed',
+                    child: Text('Đã kết thúc'),
+                  ),
+                  const DropdownMenuItem(
                     value: 'cancelled',
                     child: Text('Đã hủy'),
                   ),
@@ -453,7 +597,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
       value: _bloc,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Đơn đặt - ${widget.lotName}'),
+          title: Text(tr('reservation') + ' - ' + widget.lotName),
           actions: [
             IconButton(
               icon: const Icon(Icons.filter_list),
@@ -462,6 +606,11 @@ class _ReservationScreenState extends State<ReservationScreen> {
           ],
         ),
         body: BlocBuilder<ReservationBloc, ReservationState>(
+          buildWhen: (previous, current) {
+            return current is ReservationLoading ||
+                   current is ReservationLoaded ||
+                   current is ReservationError;
+          },
           builder: (context, state) {
             if (state is ReservationLoading) {
               return const Center(child: CircularProgressIndicator());
@@ -532,19 +681,14 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: status == 'pending' ? Colors.orange.shade100 : 
-                                           status == 'confirmed' ? Colors.green.shade100 :
-                                           Colors.red.shade100,
+                                    color: _getStatusColor(status).withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    status == 'pending' ? 'Chờ xác nhận' : 
-                                    status == 'confirmed' ? 'Đã xác nhận' : 'Đã hủy',
+                                    _getStatusText(status),
                                     style: GoogleFonts.montserrat(
                                       fontSize: 12,
-                                      color: status == 'pending' ? Colors.orange.shade900 : 
-                                             status == 'confirmed' ? Colors.green.shade900 :
-                                             Colors.red.shade900,
+                                      color: _getStatusColor(status),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -571,7 +715,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                 const Icon(Icons.directions_car, color: Colors.blue, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Biển số xe: $vehicleId',
+                                  tr('vehicle_plate') + ': $vehicleId',
                                   style: GoogleFonts.montserrat(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.blue.shade700,
@@ -585,7 +729,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                 const Icon(Icons.event_seat, color: Colors.blue, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Slot: $slotId',
+                                  tr('slot') + ': $slotId',
                                   style: GoogleFonts.montserrat(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.blue.shade700,
@@ -599,7 +743,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                 const Icon(Icons.access_time, color: Colors.blue, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Thời gian:',
+                                  tr('start_time') + ':',
                                   style: GoogleFonts.montserrat(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.blue.shade700,
@@ -622,7 +766,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                 const Icon(Icons.attach_money, color: Colors.blue, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Tổng tiền: ',
+                                  tr('total_price') + ': ',
                                   style: GoogleFonts.montserrat(
                                     fontWeight: FontWeight.w500,
                                     color: Colors.blue.shade700,
@@ -650,6 +794,103 @@ class _ReservationScreenState extends State<ReservationScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildReviewSection(String reservationId) {
+    return BlocBuilder<ReservationBloc, ReservationState>(
+      buildWhen: (previous, current) {
+        return current is ReviewLoading ||
+               current is ReviewLoaded ||
+               current is ReviewEmpty ||
+               current is ReviewError;
+      },
+      builder: (context, state) {
+        if (state is ReviewLoading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        if (state is ReviewEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Chưa có đánh giá',
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          );
+        }
+
+        if (state is ReviewError) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Có lỗi xảy ra khi tải đánh giá',
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                color: Colors.red.shade600,
+              ),
+            ),
+          );
+        }
+
+        if (state is ReviewLoaded) {
+          final review = state.review;
+          final createdAt = (review['createdAt'] as Timestamp).toDate();
+          final imageUrl = review['imageUrl'] as String?;
+          final reviewText = review['review'] as String;
+          final star = review['star'] as int;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ...List.generate(5, (index) => Icon(
+                    index < star ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 20,
+                  )),
+                  const SizedBox(width: 8),
+                  Text(
+                    DateFormat('dd/MM/yyyy HH:mm').format(createdAt),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                reviewText,
+                style: GoogleFonts.montserrat(fontSize: 16),
+              ),
+              if (imageUrl != null) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    imageUrl,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ],
+          );
+        }
+
+        return const SizedBox();
+      },
     );
   }
 } 

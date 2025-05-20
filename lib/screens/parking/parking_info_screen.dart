@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/parking_lot/parking_lot_bloc.dart';
@@ -6,6 +7,7 @@ import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class ParkingInfoScreen extends StatelessWidget {
   const ParkingInfoScreen({Key? key}) : super(key: key);
@@ -17,7 +19,7 @@ class ParkingInfoScreen extends StatelessWidget {
       create: (_) => ParkingLotBloc(CloudinaryPublic('dqnbclzi5', 'avatar_img', cache: false)),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Thông tin bãi đỗ xe'),
+          title: Text(tr('parking_info')),
         ),
         body: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
@@ -44,7 +46,7 @@ class ParkingInfoScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (context) => const AddParkingLotScreen()),
                     );
                   },
-                  label: const Text('Thêm bãi đỗ', style: TextStyle(fontSize: 18)),
+                  label: Text(tr('add_parking_lot'), style: TextStyle(fontSize: 18)),
                 ),
               );
             }
@@ -78,7 +80,7 @@ class ParkingInfoScreen extends StatelessWidget {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.blue, size: 28),
-                                tooltip: 'Chỉnh sửa bãi đỗ',
+                                tooltip: tr('edit_parking_lot'),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -105,7 +107,7 @@ class ParkingInfoScreen extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   data['address'] ?? '',
-                                  style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ),
                             ],
@@ -116,12 +118,12 @@ class ParkingInfoScreen extends StatelessWidget {
                               const Icon(Icons.attach_money, color: Colors.blue),
                               const SizedBox(width: 8),
                               Text(
-                                'Giá/giờ: ',
+                                tr('price_per_hour') + ': ',
                                 style: GoogleFonts.montserrat(fontWeight: FontWeight.w500, color: Colors.blue.shade700),
                               ),
                               Text(
                                 '${data['pricePerHour'] ?? ''} VNĐ',
-                                style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
                           ),
@@ -131,12 +133,12 @@ class ParkingInfoScreen extends StatelessWidget {
                               const Icon(Icons.event_seat, color: Colors.blue),
                               const SizedBox(width: 8),
                               Text(
-                                'Tổng số slot: ',
+                                tr('total_slot') + ': ',
                                 style: GoogleFonts.montserrat(fontWeight: FontWeight.w500, color: Colors.blue.shade700),
                               ),
                               Text(
                                 '${data['totalSlots'] ?? ''}',
-                                style: GoogleFonts.montserrat(fontSize: 16, color: Colors.black87),
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
                           ),

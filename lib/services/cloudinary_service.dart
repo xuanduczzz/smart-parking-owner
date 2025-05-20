@@ -1,25 +1,85 @@
 import 'dart:io';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:path/path.dart' as path;
+import 'package:image_picker/image_picker.dart';
 
 class CloudinaryService {
-  final CloudinaryPublic cloudinary = CloudinaryPublic(
-    'dqnbclzi5', // Thay thế bằng cloud name của bạn
-    'avatar_img', // Thay thế bằng upload preset của bạn
-  );
+  static final CloudinaryService _instance = CloudinaryService._internal();
+  factory CloudinaryService() => _instance;
+  CloudinaryService._internal();
 
-  Future<String> uploadImage(File imageFile) async {
+  final _cloudinary = CloudinaryPublic('dqnbclzi5', 'avatar_img', cache: false);
+  final _imagePicker = ImagePicker();
+
+  Future<String?> uploadImage({
+    required ImageSource source,
+    double maxWidth = 400.0,
+    double maxHeight = 400.0,
+    double imageQuality = 0.6,
+  }) async {
     try {
-      final result = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(
-          imageFile.path,
-          resourceType: CloudinaryResourceType.Image,
-          folder: 'owner_app', // Thư mục lưu trữ trên Cloudinary
-        ),
+      final pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+        imageQuality: (imageQuality * 100).toInt(),
       );
-      return result.secureUrl;
+
+      if (pickedFile != null) {
+        final cloudinaryFile = CloudinaryFile.fromFile(
+          pickedFile.path,
+          resourceType: CloudinaryResourceType.Image,
+          folder: "avatar_img",
+        );
+
+        final response = await _cloudinary.uploadFile(
+          cloudinaryFile,
+          onProgress: (count, total) {
+            // Có thể thêm xử lý progress ở đây nếu cần
+          },
+        );
+
+        // Áp dụng transformation cho URL
+        final transformedUrl = response.secureUrl.replaceAll(
+          '/upload/',
+          '/upload/c_fill,w_200,h_200,q_60/',
+        );
+
+        return transformedUrl;
+      }
+      return null;
     } catch (e) {
-      throw Exception('Lỗi khi tải ảnh lên: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  Future<String?> uploadImageFromPath({
+    required String path,
+    double imageQuality = 0.6,
+  }) async {
+    try {
+      final cloudinaryFile = CloudinaryFile.fromFile(
+        path,
+        resourceType: CloudinaryResourceType.Image,
+        folder: "avatar_img",
+      );
+
+      final response = await _cloudinary.uploadFile(
+        cloudinaryFile,
+        onProgress: (count, total) {
+          // Có thể thêm xử lý progress ở đây nếu cần
+        },
+      );
+
+      // Áp dụng transformation cho URL
+      final transformedUrl = response.secureUrl.replaceAll(
+        '/upload/',
+        '/upload/c_fill,w_200,h_200,q_60/',
+      );
+
+      return transformedUrl;
+    } catch (e) {
+      rethrow;
     }
   }
 } 

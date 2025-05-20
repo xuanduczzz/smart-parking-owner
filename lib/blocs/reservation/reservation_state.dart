@@ -26,4 +26,26 @@ class ReservationError extends ReservationState {
 
   @override
   List<Object?> get props => [message];
-} 
+}
+
+class ReviewLoading extends ReservationState {}
+
+class ReviewLoaded extends ReservationState {
+  final Map<String, dynamic> review;
+
+  ReviewLoaded(this.review);
+
+  @override
+  List<Object?> get props => [review];
+}
+
+class ReviewError extends ReservationState {
+  final String message;
+
+  ReviewError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class ReviewEmpty extends ReservationState {} 

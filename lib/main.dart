@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'repositories/auth_repository.dart';
 import 'blocs/auth/auth_bloc.dart';
@@ -12,109 +13,81 @@ import 'screens/home/home_screen.dart';
 import 'blocs/auth/auth_event.dart';
 import 'blocs/auth/auth_state.dart';
 import 'blocs/voucher/voucher_bloc.dart';
+import 'blocs/qr/qr_bloc.dart';
+import 'repositories/qr_repository.dart';
+import 'blocs/profile/profile_bloc.dart';
+import 'package:provider/provider.dart';
+import 'providers/theme_provider.dart';
+import 'screens/settings_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Kiểm tra xem Firebase đã được khởi tạo chưa
+  await EasyLocalization.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp();
   }
-  
-  runApp(const MyApp());
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('vi')],
+      path: 'assets/langs',
+      fallbackLocale: const Locale('en'),
+      child: MyRootApp(prefs: prefs),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyRootApp extends StatelessWidget {
+  final SharedPreferences prefs;
+  const MyRootApp({Key? key, required this.prefs}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) => AuthBloc(AuthRepository())..add(CheckAuthStatusEvent()),
-        ),
-        BlocProvider(
-          create: (_) => ParkingLotBloc(CloudinaryPublic('dqnbclzi5', 'avatar_img', cache: false)),
-        ),
-        BlocProvider(
-          create: (_) => VoucherBloc(),
-        ),
-      ],
-      child: MaterialApp(
-        title: 'Parking App',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-          textTheme: GoogleFonts.montserratTextTheme(
-            Theme.of(context).textTheme,
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(prefs),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => AuthBloc(AuthRepository())..add(CheckAuthStatusEvent()),
           ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            centerTitle: true,
-            titleTextStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.white,
+          BlocProvider(
+            create: (_) => ParkingLotBloc(CloudinaryPublic('dqnbclzi5', 'avatar_img', cache: false)),
+          ),
+          BlocProvider(
+            create: (_) => VoucherBloc(),
+          ),
+          BlocProvider(
+            create: (context) => QRBloc(
+              QRRepository(),
             ),
           ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          BlocProvider(
+            create: (_) => ProfileBloc(),
+          ),
+        ],
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return MaterialApp(
+              title: 'Parking App',
+              theme: themeProvider.currentTheme,
+              localizationsDelegates: context.localizationDelegates,
+              supportedLocales: context.supportedLocales,
+              locale: context.locale,
+              home: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is Authenticated) {
+                    return const HomeScreen();
+                  } else if (state is Unauthenticated) {
+                    return const LoginScreen();
+                  } else {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                },
               ),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
-              elevation: 2,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            ),
-          ),
-          cardTheme: CardTheme(
-            color: Colors.white,
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.blue),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.blue, width: 2),
-            ),
-            labelStyle: const TextStyle(color: Colors.blue),
-          ),
-          iconTheme: const IconThemeData(color: Colors.blue),
-          floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-          ),
-          snackBarTheme: const SnackBarThemeData(
-            backgroundColor: Colors.blue,
-            contentTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            behavior: SnackBarBehavior.floating,
-          ),
-        ),
-        home: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            if (state is Authenticated) {
-              return const HomeScreen();
-            } else if (state is Unauthenticated) {
-              return const LoginScreen();
-            } else {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
+            );
           },
         ),
       ),
