@@ -8,6 +8,10 @@ import 'package:intl/intl.dart';
 import '../../blocs/reservation/reservation_bloc.dart';
 import '../../blocs/reservation/reservation_event.dart';
 import '../../blocs/reservation/reservation_state.dart';
+import 'widgets/reservation_card.dart';
+import 'widgets/reservation_detail_dialog.dart';
+import 'utils/reservation_utils.dart';
+import 'constants/reservation_constants.dart';
 
 class ReservationScreen extends StatefulWidget {
   final String lotId;
@@ -52,39 +56,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
       LoadReservationsEvent(
         userId: userId,
         lotId: widget.lotId,
-      ),
-    );
-  }
-
-  void _showErrorDialog(BuildContext context, String message) {
-    if (!mounted) return;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Lỗi',
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: Text(
-          message,
-          style: GoogleFonts.montserrat(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Đóng',
-              style: GoogleFonts.montserrat(
-                color: Colors.blue,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -137,249 +108,30 @@ class _ReservationScreenState extends State<ReservationScreen> {
         }
       }
 
-      // Cập nhật trạng thái trong Firestore
-      await FirebaseFirestore.instance
-          .collection('reservations')
-          .doc(reservationId)
-          .update({'status': status});
-      
-      if (!mounted) return;
-
-      // Tải lại danh sách đơn đặt
-      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      _bloc.add(LoadReservationsEvent(
-        userId: userId,
+      // Cập nhật trạng thái thông qua bloc
+      _bloc.add(UpdateReservationStatusEvent(
+        reservationId: reservationId,
+        status: status,
         lotId: widget.lotId,
       ));
     } catch (e) {
       if (!mounted) return;
-      _showErrorDialog(context, 'Có lỗi xảy ra khi cập nhật trạng thái');
+      ReservationUtils.showErrorDialog(context, 'Có lỗi xảy ra khi cập nhật trạng thái');
     }
   }
 
   void _showReservationDetails(BuildContext context, QueryDocumentSnapshot doc) {
-    final reservation = doc.data() as Map<String, dynamic>;
-    final startTime = (reservation['startTime'] as Timestamp).toDate();
-    final endTime = (reservation['endTime'] as Timestamp).toDate();
-    final totalPrice = reservation['totalPrice'] as double;
-    final slotId = reservation['slotId'] as String? ?? '';
-    final name = reservation['name'] as String? ?? '';
-    final phoneNumber = reservation['phoneNumber'] as String? ?? '';
-    final vehicleId = reservation['vehicleId'] as String? ?? '';
-    final status = reservation['status'] as String? ?? 'pending';
-    final reservationId = doc.id;
-    final theme = Theme.of(context);
-
-    // Load review if status is completed
-    if (status == 'completed') {
-      _bloc.add(LoadReviewEvent(reservationId: reservationId));
-    }
-
     showDialog(
       context: context,
       builder: (dialogContext) => BlocProvider.value(
         value: _bloc,
-        child: Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      tr('reservation_detail'),
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(dialogContext),
-                    ),
-                  ],
-                ),
-                const Divider(),
-                const SizedBox(height: 16),
-                _buildDetailRow(context, Icons.person, tr('name') + ':', name),
-                const SizedBox(height: 12),
-                _buildDetailRow(context, Icons.phone, tr('phone') + ':', phoneNumber),
-                const SizedBox(height: 12),
-                _buildDetailRow(context, Icons.directions_car, tr('vehicle_plate') + ':', vehicleId),
-                const SizedBox(height: 12),
-                _buildDetailRow(context, Icons.event_seat, tr('slot') + ':', slotId),
-                const SizedBox(height: 12),
-                _buildDetailRow(context, Icons.access_time, tr('start_time') + ':', 
-                  DateFormat('dd/MM/yyyy HH:mm').format(startTime)),
-                const SizedBox(height: 12),
-                _buildDetailRow(context, Icons.access_time, tr('end_time') + ':', 
-                  DateFormat('dd/MM/yyyy HH:mm').format(endTime)),
-                const SizedBox(height: 12),
-                _buildDetailRow(context, Icons.attach_money, tr('total_price') + ':', 
-                  '${totalPrice.toStringAsFixed(0)} VNĐ'),
-                const SizedBox(height: 24),
-                if (status == 'completed') ...[
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Đánh giá',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildReviewSection(reservationId),
-                ],
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    if (status == 'pending') ...[
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text('Xác nhận'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(dialogContext);
-                          await _updateReservationStatus(dialogContext, reservationId, 'confirmed');
-                        },
-                      ),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.cancel),
-                        label: const Text('Hủy'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(dialogContext);
-                          await _updateReservationStatus(dialogContext, reservationId, 'cancelled');
-                        },
-                      ),
-                    ] else if (status == 'confirmed') ...[
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.login),
-                        label: const Text('Check-in'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(dialogContext);
-                          await _updateReservationStatus(dialogContext, reservationId, 'checkin');
-                        },
-                      ),
-                    ] else if (status == 'checkin') ...[
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Check-out'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(dialogContext);
-                          await _updateReservationStatus(dialogContext, reservationId, 'checkout');
-                        },
-                      ),
-                    ] else if (status == 'checkout') ...[
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Kết thúc'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(dialogContext);
-                          await _updateReservationStatus(dialogContext, reservationId, 'completed');
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
+        child: ReservationDetailDialog(
+          doc: doc,
+          onUpdateStatus: (reservationId, status) => 
+            _updateReservationStatus(context, reservationId, status),
         ),
       ),
     );
-  }
-
-  Widget _buildDetailRow(BuildContext context, IconData icon, String label, String value) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, color: theme.colorScheme.primary, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'confirmed':
-        return Colors.blue;
-      case 'cancelled':
-        return Colors.red;
-      case 'checkin':
-        return Colors.green;
-      case 'checkout':
-        return Colors.purple;
-      case 'completed':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'pending':
-        return 'Chờ xác nhận';
-      case 'confirmed':
-        return 'Đã xác nhận';
-      case 'cancelled':
-        return 'Đã hủy';
-      case 'checkin':
-        return 'Đã check-in';
-      case 'checkout':
-        return 'Đã check-out';
-      case 'completed':
-        return 'Đã kết thúc';
-      default:
-        return status;
-    }
   }
 
   void _showFilterDialog() {
@@ -501,30 +253,10 @@ class _ReservationScreenState extends State<ReservationScreen> {
                     value: null,
                     child: Text('Tất cả'),
                   ),
-                  const DropdownMenuItem(
-                    value: 'pending',
-                    child: Text('Chờ xác nhận'),
-                  ),
-                  const DropdownMenuItem(
-                    value: 'confirmed',
-                    child: Text('Đã xác nhận'),
-                  ),
-                  const DropdownMenuItem(
-                    value: 'checkin',
-                    child: Text('Đã check-in'),
-                  ),
-                  const DropdownMenuItem(
-                    value: 'checkout',
-                    child: Text('Đã check-out'),
-                  ),
-                  const DropdownMenuItem(
-                    value: 'completed',
-                    child: Text('Đã kết thúc'),
-                  ),
-                  const DropdownMenuItem(
-                    value: 'cancelled',
-                    child: Text('Đã hủy'),
-                  ),
+                  ...ReservationConstants.statusList.map((status) => DropdownMenuItem(
+                    value: status,
+                    child: Text(ReservationConstants.statusTextMap[status] ?? status),
+                  )),
                 ],
                 onChanged: (value) {
                   dialogSetState(() {
@@ -642,150 +374,11 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 itemCount: state.reservations.length,
                 itemBuilder: (context, index) {
                   final doc = state.reservations[index];
-                  final reservation = doc.data() as Map<String, dynamic>;
-                  final startTime = (reservation['startTime'] as Timestamp).toDate();
-                  final endTime = (reservation['endTime'] as Timestamp).toDate();
-                  final totalPrice = reservation['totalPrice'] as double;
-                  final slotId = reservation['slotId'] as String? ?? '';
-                  final name = reservation['name'] as String? ?? '';
-                  final phoneNumber = reservation['phoneNumber'] as String? ?? '';
-                  final vehicleId = reservation['vehicleId'] as String? ?? '';
-                  final status = reservation['status'] as String? ?? 'pending';
-                  
-                  return Card(
-                    elevation: 3,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => _showReservationDetails(context, doc),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.person, color: Colors.blue, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    name,
-                                    style: GoogleFonts.montserrat(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusColor(status).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    _getStatusText(status),
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 12,
-                                      color: _getStatusColor(status),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.phone, color: Colors.blue, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  phoneNumber,
-                                  style: GoogleFonts.montserrat(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.directions_car, color: Colors.blue, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  tr('vehicle_plate') + ': $vehicleId',
-                                  style: GoogleFonts.montserrat(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.event_seat, color: Colors.blue, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  tr('slot') + ': $slotId',
-                                  style: GoogleFonts.montserrat(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.access_time, color: Colors.blue, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  tr('start_time') + ':',
-                                  style: GoogleFonts.montserrat(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Bắt đầu: ${DateFormat('dd/MM/yyyy HH:mm').format(startTime)}',
-                              style: GoogleFonts.montserrat(fontSize: 14),
-                            ),
-                            Text(
-                              'Kết thúc: ${DateFormat('dd/MM/yyyy HH:mm').format(endTime)}',
-                              style: GoogleFonts.montserrat(fontSize: 14),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.attach_money, color: Colors.blue, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  tr('total_price') + ': ',
-                                  style: GoogleFonts.montserrat(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                                Text(
-                                  '${totalPrice.toStringAsFixed(0)} VNĐ',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  return ReservationCard(
+                    doc: doc,
+                    onTap: _showReservationDetails,
+                    getStatusColor: ReservationUtils.getStatusColor,
+                    getStatusText: ReservationUtils.getStatusText,
                   );
                 },
               );
@@ -794,103 +387,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
           },
         ),
       ),
-    );
-  }
-
-  Widget _buildReviewSection(String reservationId) {
-    return BlocBuilder<ReservationBloc, ReservationState>(
-      buildWhen: (previous, current) {
-        return current is ReviewLoading ||
-               current is ReviewLoaded ||
-               current is ReviewEmpty ||
-               current is ReviewError;
-      },
-      builder: (context, state) {
-        if (state is ReviewLoading) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-        
-        if (state is ReviewEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Chưa có đánh giá',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          );
-        }
-
-        if (state is ReviewError) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Có lỗi xảy ra khi tải đánh giá',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: Colors.red.shade600,
-              ),
-            ),
-          );
-        }
-
-        if (state is ReviewLoaded) {
-          final review = state.review;
-          final createdAt = (review['createdAt'] as Timestamp).toDate();
-          final imageUrl = review['imageUrl'] as String?;
-          final reviewText = review['review'] as String;
-          final star = review['star'] as int;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ...List.generate(5, (index) => Icon(
-                    index < star ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
-                    size: 20,
-                  )),
-                  const SizedBox(width: 8),
-                  Text(
-                    DateFormat('dd/MM/yyyy HH:mm').format(createdAt),
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                reviewText,
-                style: GoogleFonts.montserrat(fontSize: 16),
-              ),
-              if (imageUrl != null) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    imageUrl,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
-            ],
-          );
-        }
-
-        return const SizedBox();
-      },
     );
   }
 } 

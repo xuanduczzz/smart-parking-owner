@@ -131,6 +131,7 @@ class _EnterSlotsScreenState extends State<EnterSlotsScreen> {
           imageFiles: widget.imageFiles,
           mapFiles: widget.mapFiles,
           slots: slots,
+          status: false,
         ),
       );
     }

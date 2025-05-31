@@ -75,6 +75,7 @@ class ParkingLotBloc extends Bloc<ParkingLotEvent, ParkingLotState> {
         'totalSlots': event.slots.length,
         'oid': userId,
         'createdAt': FieldValue.serverTimestamp(),
+        'status': event.status,
       });
       for (final slot in event.slots) {
         await parkingLotRef.collection('slots').doc(slot['id']).set(slot);

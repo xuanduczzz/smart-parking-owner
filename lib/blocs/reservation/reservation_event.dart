@@ -53,4 +53,25 @@ class LoadReviewEvent extends ReservationEvent {
 
   @override
   List<Object?> get props => [reservationId];
+}
+
+class UpdateReservationStatusEvent extends ReservationEvent {
+  final String reservationId;
+  final String status;
+  final String lotId;
+
+  UpdateReservationStatusEvent({
+    required this.reservationId,
+    required this.status,
+    required this.lotId,
+  });
+
+  @override
+  List<Object?> get props => [reservationId, status, lotId];
+}
+
+class LoadPaymentImageEvent extends ReservationEvent {
+  final String reservationId;
+
+  LoadPaymentImageEvent({required this.reservationId});
 } 

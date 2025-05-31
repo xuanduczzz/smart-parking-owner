@@ -142,6 +142,30 @@ class ParkingInfoScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 12),
+                          if (data['status'] == false)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orange),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.pending_actions, color: Colors.orange.shade800, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    tr('waiting_for_confirmation'),
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.orange.shade800,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),

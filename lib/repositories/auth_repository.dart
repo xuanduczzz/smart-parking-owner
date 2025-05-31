@@ -50,7 +50,18 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    try {
+    int retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        // Kiểm tra kết nối internet
+        try {
+          await _firestore.collection('user_owner').limit(1).get();
+        } catch (e) {
+          throw Exception('Không có kết nối internet. Vui lòng kiểm tra lại kết nối của bạn.');
+        }
+
       // Kiểm tra email có tồn tại trong collection user_owner không
       final querySnapshot = await _firestore
           .collection('user_owner')
@@ -77,12 +88,29 @@ class AuthRepository {
         throw Exception('Email không tồn tại');
       } else if (e.code == 'wrong-password') {
         throw Exception('Mật khẩu không đúng');
+        } else if (e.code == 'network-request-failed') {
+          retryCount++;
+          if (retryCount == maxRetries) {
+            throw Exception('Lỗi kết nối mạng. Vui lòng thử lại sau.');
+          }
+          await Future.delayed(Duration(seconds: retryCount));
+          continue;
       } else {
         throw Exception(e.message ?? 'Lỗi đăng nhập');
       }
     } catch (e) {
+        if (e.toString().contains('network') || e.toString().contains('connection')) {
+          retryCount++;
+          if (retryCount == maxRetries) {
+            throw Exception('Lỗi kết nối mạng. Vui lòng thử lại sau.');
+          }
+          await Future.delayed(Duration(seconds: retryCount));
+          continue;
+        }
       throw Exception(e.toString());
+      }
     }
+    throw Exception('Đã hết số lần thử lại. Vui lòng thử lại sau.');
   }
 
   Future<void> signOut() async {

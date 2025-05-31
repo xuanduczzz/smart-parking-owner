@@ -48,4 +48,13 @@ class ReviewError extends ReservationState {
   List<Object?> get props => [message];
 }
 
-class ReviewEmpty extends ReservationState {} 
+class ReviewEmpty extends ReservationState {}
+
+class PaymentImageLoaded extends ReservationState {
+  final String? paymentImageUrl;
+
+  PaymentImageLoaded({this.paymentImageUrl});
+
+  @override
+  List<Object?> get props => [paymentImageUrl];
+} 

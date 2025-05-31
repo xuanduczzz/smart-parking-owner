@@ -93,5 +93,7 @@
   "create": "Tạo",
   "discounts": "Mã giảm giá",
   "no_parking_found": "Không tìm thấy bãi đỗ xe",
-  "no_discounts": "Chưa có mã giảm giá nào"
+  "no_discounts": "Chưa có mã giảm giá nào",
+
+  "waiting_for_confirmation": "chờ xác nhận"
 } 

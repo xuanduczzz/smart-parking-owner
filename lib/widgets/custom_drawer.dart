@@ -7,6 +7,7 @@ import '../blocs/profile/profile_bloc.dart';
 import '../blocs/profile/profile_state.dart';
 import '../blocs/profile/profile_event.dart';
 import '../models/owner_model.dart';
+import '../screens/auth/login_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({Key? key}) : super(key: key);
@@ -90,9 +91,27 @@ class CustomDrawer extends StatelessWidget {
             leading: const Icon(Icons.logout),
             title: const Text('Đăng xuất'),
             onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              // TODO: Điều hướng về trang đăng nhập
-              Navigator.pop(context);
+              try {
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.pop(context); // Đóng drawer
+                  // Xóa tất cả các màn hình trong stack và chuyển về màn hình login
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Lỗi khi đăng xuất: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
           ),
         ],

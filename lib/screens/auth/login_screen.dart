@@ -38,6 +38,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 content: Text(state.message),
                 backgroundColor: Colors.red,
                 duration: const Duration(seconds: 3),
+                action: state.message.contains('kết nối') 
+                  ? SnackBarAction(
+                      label: 'Thử lại',
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          setState(() => _isLoading = true);
+                          context.read<AuthBloc>().add(
+                                SignInEvent(
+                                  email: _emailController.text,
+                                  password: _passwordController.text,
+                                ),
+                              );
+                        }
+                      },
+                    )
+                  : null,
               ),
             );
           } else if (state is Authenticated) {
@@ -74,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.email),
                     ),
                     keyboardType: TextInputType.emailAddress,
+                    enabled: !_isLoading,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Vui lòng nhập email';
@@ -93,6 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.lock),
                     ),
                     obscureText: true,
+                    enabled: !_isLoading,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Vui lòng nhập mật khẩu';
@@ -127,13 +145,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('Đang đăng nhập...'),
+                                ],
                               )
                             : const Text(
                                 'Đăng nhập',

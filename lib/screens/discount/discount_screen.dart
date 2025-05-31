@@ -276,6 +276,35 @@ class DiscountScreen extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+                    const SizedBox(height: 16),
+                    Text(
+                      tr('connection_error'),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 18,
+                        color: Colors.red.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Retry loading data
+                        context.read<DiscountBloc>().add(
+                          LoadDiscounts(snapshot.data?.docs.first.id ?? ''),
+                        );
+                      },
+                      child: Text(tr('retry')),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return Center(child: Text(tr('no_parking_found')));
             }

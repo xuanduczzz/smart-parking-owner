@@ -38,6 +38,7 @@ class SaveParkingLotWithSlotsEvent extends ParkingLotEvent {
   final List<File> imageFiles;
   final List<File> mapFiles;
   final List<Map<String, dynamic>> slots;
+  final bool status;
 
   SaveParkingLotWithSlotsEvent({
     required this.name,
@@ -48,10 +49,11 @@ class SaveParkingLotWithSlotsEvent extends ParkingLotEvent {
     required this.imageFiles,
     required this.mapFiles,
     required this.slots,
+    required this.status,
   });
 
   @override
-  List<Object?> get props => [name, address, pricePerHour, lat, lng, imageFiles, mapFiles, slots];
+  List<Object?> get props => [name, address, pricePerHour, lat, lng, imageFiles, mapFiles, slots, status];
 }
 
 class UpdateParkingLotWithSlotsEvent extends ParkingLotEvent {
