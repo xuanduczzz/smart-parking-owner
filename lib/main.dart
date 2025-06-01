@@ -20,6 +20,9 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/settings_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'services/reservation_time_checker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,19 +31,32 @@ void main() async {
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp();
   }
+
+  // Khởi tạo ReservationTimeChecker
+  final reservationTimeChecker = ReservationTimeChecker();
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('vi')],
       path: 'assets/langs',
       fallbackLocale: const Locale('en'),
-      child: MyRootApp(prefs: prefs),
+      child: MyRootApp(
+        prefs: prefs,
+        reservationTimeChecker: reservationTimeChecker,
+      ),
     ),
   );
 }
 
 class MyRootApp extends StatelessWidget {
   final SharedPreferences prefs;
-  const MyRootApp({Key? key, required this.prefs}) : super(key: key);
+  final ReservationTimeChecker reservationTimeChecker;
+  
+  const MyRootApp({
+    Key? key, 
+    required this.prefs,
+    required this.reservationTimeChecker,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
