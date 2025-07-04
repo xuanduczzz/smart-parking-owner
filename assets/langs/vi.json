@@ -95,5 +95,8 @@
   "no_parking_found": "Không tìm thấy bãi đỗ xe",
   "no_discounts": "Chưa có mã giảm giá nào",
 
-  "waiting_for_confirmation": "chờ xác nhận"
+  "waiting_for_confirmation": "chờ xác nhận",
+  "check_availability": "kiểm tra chỗ trống",
+  "available_slots": "chỗ còn trống",
+  "total_available": "tổng số chỗ trống"
 } 

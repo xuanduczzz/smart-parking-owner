@@ -44,4 +44,17 @@ class UpdateAvatarEvent extends ProfileEvent {
 
   @override
   List<Object?> get props => [userId, avatarUrl];
+}
+
+class UpdateQRCodeEvent extends ProfileEvent {
+  final String userId;
+  final String qrCodeUrl;
+
+  const UpdateQRCodeEvent({
+    required this.userId,
+    required this.qrCodeUrl,
+  });
+
+  @override
+  List<Object?> get props => [userId, qrCodeUrl];
 } 

@@ -77,6 +77,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _pickAndUploadQRCode() async {
+    try {
+      setState(() {
+        _isUploading = true;
+      });
+
+      final imageUrl = await _cloudinaryService.uploadImage(
+        source: ImageSource.gallery,
+        maxWidth: 400.0,
+        maxHeight: 400.0,
+        imageQuality: 0.6,
+      );
+
+      if (imageUrl != null) {
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId != null) {
+          context.read<ProfileBloc>().add(
+            UpdateQRCodeEvent(
+              userId: userId,
+              qrCodeUrl: imageUrl,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi tải ảnh QR: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
   void _updateProfile() {
     if (_formKey.currentState!.validate()) {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -347,39 +382,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: theme.dividerColor),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            profile.qrcode,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(
-                                child: Icon(
-                                  Icons.error_outline,
-                                  color: Colors.red,
-                                  size: 40,
-                                ),
-                              );
-                            },
+                      Stack(
+                        children: [
+                          Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: theme.dividerColor),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                profile.qrcode,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red,
+                                      size: 40,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: GestureDetector(
+                              onTap: _isUploading ? null : _pickAndUploadQRCode,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _isUploading ? 'Đang tải ảnh...' : 'Nhấn để thay đổi mã QR',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.hintColor,
                         ),
                       ),
                     ],

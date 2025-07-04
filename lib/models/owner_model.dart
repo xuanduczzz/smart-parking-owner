@@ -6,7 +6,6 @@ class OwnerModel {
   final String address;
   final DateTime createdAt;
   final String avatar;
-  final String payimg;
   final String qrcode;
   final bool status;
 
@@ -18,7 +17,6 @@ class OwnerModel {
     required this.address,
     required this.createdAt,
     this.avatar = '',
-    this.payimg = '',
     this.qrcode = '',
     this.status = false,
   });
@@ -33,7 +31,6 @@ class OwnerModel {
       'createdAt': createdAt.toIso8601String(),
       'avatar': avatar,
       'oid': id,
-      'payimg': payimg,
       'qrcode': qrcode,
       'status': status,
     };
@@ -48,7 +45,6 @@ class OwnerModel {
       address: map['address'] ?? '',
       createdAt: DateTime.parse(map['createdAt']),
       avatar: map['avatar'] ?? '',
-      payimg: map['payimg'] ?? '',
       qrcode: map['qrcode'] ?? '',
       status: map['status'] ?? false,
     );

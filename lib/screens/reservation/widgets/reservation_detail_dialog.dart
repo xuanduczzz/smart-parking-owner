@@ -221,12 +221,13 @@ class ReservationDetailDialog extends StatelessWidget {
                 children: [
                   if (status == 'pending') ...[
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Xác nhận'),
+                      icon: const Icon(Icons.check_circle, size: 18),
+                      label: const Text('Xác nhận', style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: const Size(100, 36),
                       ),
                       onPressed: () {
                         Navigator.pop(context);
@@ -234,12 +235,13 @@ class ReservationDetailDialog extends StatelessWidget {
                       },
                     ),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.cancel),
-                      label: const Text('Hủy'),
+                      icon: const Icon(Icons.cancel, size: 18),
+                      label: const Text('Hủy', style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: const Size(100, 36),
                       ),
                       onPressed: () {
                         Navigator.pop(context);

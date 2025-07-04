@@ -86,16 +86,66 @@ class HomeScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
+            return SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.local_parking, size: 64, color: theme.iconTheme.color?.withOpacity(0.4)),
-                  const SizedBox(height: 16),
-                  Text(
-                    tr('no_parking_lots'),
-                    style: theme.textTheme.bodyLarge,
+                  const SizedBox(height: 36),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      tr('welcome'),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
+                  const SizedBox(height: 36),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.local_parking,
+                    title: tr('parking_info'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ParkingInfoScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.discount,
+                    title: tr('discount'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DiscountScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.bar_chart,
+                    title: tr('statistics'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.qr_code_scanner,
+                    title: tr('qr_scan'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 36),
                 ],
               ),
             );

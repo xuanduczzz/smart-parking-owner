@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/owner_model.dart';
+import 'dart:developer' as developer;
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,14 +14,15 @@ class AuthRepository {
     required String phone,
     required String address,
     String avatar = '',
-    String payimg = '',
     String qrcode = '',
   }) async {
+    developer.log('Bắt đầu tạo tài khoản Firebase', name: 'AuthRepository');
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      developer.log('Tạo tài khoản Firebase thành công: ${userCredential.user?.uid}', name: 'AuthRepository');
 
       final owner = OwnerModel(
         id: userCredential.user!.uid,
@@ -30,18 +32,20 @@ class AuthRepository {
         address: address,
         createdAt: DateTime.now(),
         avatar: avatar,
-        payimg: payimg,
         qrcode: qrcode,
         status: false,
       );
+      developer.log('Tạo model Owner thành công', name: 'AuthRepository');
 
       await _firestore
           .collection('user_owner')
           .doc(userCredential.user!.uid)
           .set(owner.toMap());
+      developer.log('Lưu thông tin owner vào Firestore thành công', name: 'AuthRepository');
 
       return userCredential;
     } catch (e) {
+      developer.log('Lỗi trong quá trình đăng ký: ${e.toString()}', name: 'AuthRepository', error: e);
       throw Exception(e.toString());
     }
   }

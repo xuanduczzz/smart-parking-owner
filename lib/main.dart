@@ -23,6 +23,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'services/reservation_time_checker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'blocs/discount/discount_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +81,9 @@ class MyRootApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (_) => ProfileBloc(),
+          ),
+          BlocProvider(
+            create: (_) => DiscountBloc(),
           ),
         ],
         child: Consumer<ThemeProvider>(

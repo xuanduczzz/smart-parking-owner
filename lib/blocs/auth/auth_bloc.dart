@@ -3,6 +3,7 @@ import '../../repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer' as developer;
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -15,8 +16,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onSignUp(SignUpEvent event, Emitter<AuthState> emit) async {
+    developer.log('Bắt đầu quá trình đăng ký trong AuthBloc', name: 'AuthBloc');
     emit(AuthLoading());
     try {
+      developer.log('Thông tin đăng ký chi tiết:', name: 'AuthBloc');
+      developer.log('Email: ${event.email}', name: 'AuthBloc');
+      developer.log('Name: ${event.name}', name: 'AuthBloc');
+      developer.log('Phone: ${event.phone}', name: 'AuthBloc');
+      developer.log('Address: ${event.address}', name: 'AuthBloc');
+      developer.log('Avatar URL: ${event.avatar}', name: 'AuthBloc');
+      developer.log('QR Code URL: ${event.qrcode}', name: 'AuthBloc');
+      
       await _authRepository.signUp(
         email: event.email,
         password: event.password,
@@ -24,12 +34,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         phone: event.phone,
         address: event.address,
         avatar: event.avatar,
-        payimg: event.payimg,
         qrcode: event.qrcode,
       );
+      
       final user = FirebaseAuth.instance.currentUser;
+      developer.log('Đăng ký thành công với user ID: ${user?.uid}', name: 'AuthBloc');
       emit(Authenticated(user));
     } catch (e) {
+      developer.log('Lỗi đăng ký chi tiết:', name: 'AuthBloc');
+      developer.log('Error type: ${e.runtimeType}', name: 'AuthBloc');
+      developer.log('Error message: ${e.toString()}', name: 'AuthBloc', error: e);
       emit(AuthError(e.toString()));
     }
   }

@@ -1,32 +1,27 @@
 import 'dart:io';
-import 'package:equatable/equatable.dart';
 
-abstract class ParkingLotEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
+abstract class ParkingLotEvent {}
+
+class LoadParkingLotsEvent extends ParkingLotEvent {}
+
+class LoadParkingSlotsEvent extends ParkingLotEvent {
+  final String parkingLotId;
+
+  LoadParkingSlotsEvent(this.parkingLotId);
 }
 
-class AddParkingLotEvent extends ParkingLotEvent {
-  final String name;
-  final String address;
-  final double pricePerHour;
-  final double lat;
-  final double lng;
-  final List<File> imageFiles;
-  final List<File> mapFiles;
+class CheckAvailableSlotsEvent extends ParkingLotEvent {
+  final String lotId;
+  final String vehicleType;
+  final DateTime startTime;
+  final DateTime endTime;
 
-  AddParkingLotEvent({
-    required this.name,
-    required this.address,
-    required this.pricePerHour,
-    required this.lat,
-    required this.lng,
-    required this.imageFiles,
-    required this.mapFiles,
+  CheckAvailableSlotsEvent({
+    required this.lotId,
+    required this.vehicleType,
+    required this.startTime,
+    required this.endTime,
   });
-
-  @override
-  List<Object?> get props => [name, address, pricePerHour, lat, lng, imageFiles, mapFiles];
 }
 
 class SaveParkingLotWithSlotsEvent extends ParkingLotEvent {
@@ -51,9 +46,6 @@ class SaveParkingLotWithSlotsEvent extends ParkingLotEvent {
     required this.slots,
     required this.status,
   });
-
-  @override
-  List<Object?> get props => [name, address, pricePerHour, lat, lng, imageFiles, mapFiles, slots, status];
 }
 
 class UpdateParkingLotWithSlotsEvent extends ParkingLotEvent {
@@ -82,7 +74,32 @@ class UpdateParkingLotWithSlotsEvent extends ParkingLotEvent {
     required this.existingMapUrls,
     required this.slots,
   });
+}
 
-  @override
-  List<Object?> get props => [docId, name, address, pricePerHour, lat, lng, imageFiles, mapFiles, existingImageUrls, existingMapUrls, slots];
+class UpdateParkingLotStatusEvent extends ParkingLotEvent {
+  final String parkingLotId;
+  final bool status;
+
+  UpdateParkingLotStatusEvent({
+    required this.parkingLotId,
+    required this.status,
+  });
+}
+
+class LoadExistingSlotsEvent extends ParkingLotEvent {
+  final String parkingLotId;
+
+  LoadExistingSlotsEvent(this.parkingLotId);
+}
+
+class SaveSlotsEvent extends ParkingLotEvent {
+  final String? parkingLotId;
+  final List<Map<String, dynamic>> slots;
+  final bool isEditing;
+
+  SaveSlotsEvent({
+    this.parkingLotId,
+    required this.slots,
+    required this.isEditing,
+  });
 } 

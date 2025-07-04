@@ -14,6 +14,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<LoadProfileEvent>(_onLoadProfile);
     on<UpdateProfileEvent>(_onUpdateProfile);
     on<UpdateAvatarEvent>(_onUpdateAvatar);
+    on<UpdateQRCodeEvent>(_onUpdateQRCode);
   }
 
   Future<void> _onLoadProfile(
@@ -87,6 +88,36 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       final updatedData = {
         ...currentData,
         'avatar': event.avatarUrl,
+      };
+
+      await docRef.update(updatedData);
+      
+      _currentProfile = OwnerModel.fromMap(updatedData);
+      emit(ProfileUpdated(_currentProfile!));
+    } catch (e) {
+      emit(ProfileError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateQRCode(
+    UpdateQRCodeEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    try {
+      emit(ProfileUpdating());
+      
+      final docRef = _firestore.collection('user_owner').doc(event.userId);
+      final doc = await docRef.get();
+      
+      if (!doc.exists) {
+        emit(const ProfileError('Không tìm thấy thông tin người dùng'));
+        return;
+      }
+
+      final currentData = doc.data()!;
+      final updatedData = {
+        ...currentData,
+        'qrcode': event.qrCodeUrl,
       };
 
       await docRef.update(updatedData);

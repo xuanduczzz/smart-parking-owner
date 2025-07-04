@@ -38,42 +38,45 @@ class DiscountScreen extends StatelessWidget {
                       onPressed: () {
                         showDialog(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(tr('send_notification')),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(tr('confirm_send_notification')),
-                                const SizedBox(height: 16),
-                                Text(
-                                  tr('discount_info', args: [discount.code, discount.discountPercent.toString()]),
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                          builder: (context) => BlocProvider.value(
+                            value: context.read<DiscountBloc>(),
+                            child: AlertDialog(
+                              title: Text(tr('send_notification')),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(tr('confirm_send_notification')),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    tr('discount_info', args: [discount.code, discount.discountPercent.toString()]),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Hủy'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    context.read<DiscountBloc>().add(
+                                          SendDiscountNotification(
+                                            code: discount.code,
+                                            discountPercent: discount.discountPercent,
+                                          ),
+                                        );
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                       SnackBar(
+                                        content: Text(tr('notification_sent')),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Gửi'),
                                 ),
                               ],
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Hủy'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  context.read<DiscountBloc>().add(
-                                        SendDiscountNotification(
-                                          code: discount.code,
-                                          discountPercent: discount.discountPercent,
-                                        ),
-                                      );
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                      content: Text(tr('notification_sent')),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Gửi'),
-                              ),
-                            ],
                           ),
                         );
                       },
@@ -84,32 +87,35 @@ class DiscountScreen extends StatelessWidget {
                       onPressed: () {
                         showDialog(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(tr('delete_discount_title')),
-                            content: Text(tr('confirm_delete_discount', args: [discount.code])),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Hủy'),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
+                          builder: (context) => BlocProvider.value(
+                            value: context.read<DiscountBloc>(),
+                            child: AlertDialog(
+                              title: Text(tr('delete_discount_title')),
+                              content: Text(tr('confirm_delete_discount', args: [discount.code])),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Hủy'),
                                 ),
-                                onPressed: () {
-                                  context.read<DiscountBloc>().add(
-                                        DeleteDiscount(discount.id),
-                                      );
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(
-                                      content: Text(tr('discount_deleted')),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Xóa'),
-                              ),
-                            ],
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    context.read<DiscountBloc>().add(
+                                          DeleteDiscount(discount.id),
+                                        );
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                       SnackBar(
+                                        content: Text(tr('discount_deleted')),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Xóa'),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -247,137 +253,125 @@ class DiscountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    return BlocProvider(
-      create: (context) {
-        final bloc = DiscountBloc();
-        // Load dữ liệu sau khi có parkingLotId
-        FirebaseFirestore.instance
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(tr('discount_title')),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
             .collection('parking_lots')
             .where('oid', isEqualTo: userId)
-            .get()
-            .then((snapshot) {
-          if (snapshot.docs.isNotEmpty) {
-            bloc.add(LoadDiscounts(snapshot.docs.first.id));
+            .snapshots(),
+        builder: (context, parkingLotSnapshot) {
+          if (parkingLotSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
-        });
-        return bloc;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(tr('discount_title')),
-        ),
-        body: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('parking_lots')
-              .where('oid', isEqualTo: userId)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
-                    const SizedBox(height: 16),
-                    Text(
-                      tr('connection_error'),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 18,
-                        color: Colors.red.shade600,
-                      ),
+          if (parkingLotSnapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+                  const SizedBox(height: 16),
+                  Text(
+                    tr('connection_error'),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      color: Colors.red.shade600,
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Retry loading data
-                        context.read<DiscountBloc>().add(
-                          LoadDiscounts(snapshot.data?.docs.first.id ?? ''),
-                        );
-                      },
-                      child: Text(tr('retry')),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return Center(child: Text(tr('no_parking_found')));
-            }
-
-            final parkingLotId = snapshot.data!.docs.first.id;
-
-            return BlocBuilder<DiscountBloc, DiscountState>(
-              builder: (context, state) {
-                if (state is DiscountLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (state is DiscountError) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
-
-                if (state is DiscountLoaded) {
-                  if (state.discounts.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.discount, size: 64, color: Colors.grey.shade400),
-                          const SizedBox(height: 16),
-                          Text(
-                            tr('no_discounts'),
-                            style: GoogleFonts.montserrat(
-                              fontSize: 18,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    itemCount: state.discounts.length,
-                    itemBuilder: (context, index) {
-                      return _buildDiscountCard(context, state.discounts[index]);
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Retry loading data
+                      context.read<DiscountBloc>().add(
+                        LoadDiscounts(parkingLotSnapshot.data?.docs.first.id ?? ''),
+                      );
                     },
-                  );
-                }
-
-                return const SizedBox();
-              },
+                    child: Text(tr('retry')),
+                  ),
+                ],
+              ),
             );
-          },
-        ),
-        floatingActionButton: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('parking_lots')
-              .where('oid', isEqualTo: userId)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const SizedBox();
-            }
+          }
 
-            final parkingLotId = snapshot.data!.docs.first.id;
+          if (!parkingLotSnapshot.hasData || parkingLotSnapshot.data!.docs.isEmpty) {
+            return Center(child: Text(tr('no_parking_found')));
+          }
 
-            return FloatingActionButton(
-              onPressed: () => _showCreateVoucherDialog(context, parkingLotId),
-              child: const Icon(Icons.add),
-            );
-          },
-        ),
+          final parkingLotId = parkingLotSnapshot.data!.docs.first.id;
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('vouchers')
+                .where('parkingLotId', isEqualTo: parkingLotId)
+                .snapshots(),
+            builder: (context, voucherSnapshot) {
+              if (voucherSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (voucherSnapshot.hasError) {
+                return Center(
+                  child: Text(
+                    voucherSnapshot.error.toString(),
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              if (!voucherSnapshot.hasData || voucherSnapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.discount, size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        tr('no_discounts'),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final discounts = voucherSnapshot.data!.docs
+                  .map((doc) => DiscountCode.fromFirestore(doc))
+                  .toList();
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                itemCount: discounts.length,
+                itemBuilder: (context, index) {
+                  return _buildDiscountCard(context, discounts[index]);
+                },
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('parking_lots')
+            .where('oid', isEqualTo: userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const SizedBox();
+          }
+
+          final parkingLotId = snapshot.data!.docs.first.id;
+
+          return FloatingActionButton(
+            onPressed: () => _showCreateVoucherDialog(context, parkingLotId),
+            child: const Icon(Icons.add),
+          );
+        },
       ),
     );
   }

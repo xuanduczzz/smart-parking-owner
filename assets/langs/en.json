@@ -90,5 +90,8 @@
   "discounts": "Discount codes",
   "no_parking_found": "No parking lot found",
   "no_discounts": "No discount codes yet",
-  "waiting_for_confirmation": "waiting for confirmation"
-} 
+  "waiting_for_confirmation": "waiting for confirmation",
+  "check_availability": "check_availability",
+  "available_slots": "available slots",
+  "total_available": "total available"
+}

@@ -7,7 +7,6 @@ class SignUpEvent extends AuthEvent {
   final String phone;
   final String address;
   final String avatar;
-  final String payimg;
   final String qrcode;
 
   SignUpEvent({
@@ -17,7 +16,6 @@ class SignUpEvent extends AuthEvent {
     required this.phone,
     required this.address,
     required this.avatar,
-    required this.payimg,
     required this.qrcode,
   });
 }

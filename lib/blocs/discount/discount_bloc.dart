@@ -110,13 +110,21 @@ class DiscountBloc extends Bloc<DiscountEvent, DiscountState> {
     try {
       emit(DiscountLoading());
       
-      // Gửi thông báo đến tất cả người dùng
-      await _firestore.collection('notifications').add({
-        'title': 'Mã giảm giá mới',
-        'body': 'Bạn có mã giảm giá mới: ${event.code} với ${event.discountPercent}% giảm giá',
-        'timestamp': FieldValue.serverTimestamp(),
-        'type': 'discount',
-      });
+      // Lấy danh sách user_customer
+      final userSnapshot = await _firestore
+          .collection('user_customer')
+          .get();
+
+      // Gửi thông báo đến từng user
+      for (var userDoc in userSnapshot.docs) {
+        await _firestore.collection('notifications').add({
+          'title': 'Mã giảm giá mới',
+          'body': 'Bạn có mã giảm giá mới: ${event.code} với ${event.discountPercent}% giảm giá',
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'userId': userDoc.id,
+        });
+      }
 
       emit(NotificationSent());
     } catch (e) {

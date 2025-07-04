@@ -6,6 +6,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../services/cloudinary_service.dart';
+import 'dart:developer' as developer;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -25,7 +26,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _qrcodeController = TextEditingController();
   
   File? _avatarImage;
-  File? _payimgImage;
   File? _qrcodeImage;
   final _cloudinaryService = CloudinaryService();
   bool _isLoading = false;
@@ -34,17 +34,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _pickImage(ImageSource source, String type) async {
     try {
+      developer.log('Bắt đầu chọn ảnh loại: $type', name: 'RegisterScreen');
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: source);
       
       if (image != null) {
+        developer.log('Đã chọn ảnh thành công: ${image.path}', name: 'RegisterScreen');
         setState(() {
           switch (type) {
             case 'avatar':
               _avatarImage = File(image.path);
-              break;
-            case 'payimg':
-              _payimgImage = File(image.path);
               break;
             case 'qrcode':
               _qrcodeImage = File(image.path);
@@ -53,6 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       }
     } catch (e) {
+      developer.log('Lỗi khi chọn ảnh: ${e.toString()}', name: 'RegisterScreen', error: e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi khi chọn ảnh: ${e.toString()}')),
       );
@@ -62,11 +62,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<String?> _uploadImage(File? image) async {
     if (image == null) return null;
     try {
-      return await _cloudinaryService.uploadImageFromPath(
+      developer.log('Bắt đầu upload ảnh: ${image.path}', name: 'RegisterScreen');
+      final url = await _cloudinaryService.uploadImageFromPath(
         path: image.path,
         imageQuality: 0.6,
       );
+      developer.log('Upload ảnh thành công: $url', name: 'RegisterScreen');
+      return url;
     } catch (e) {
+      developer.log('Lỗi khi upload ảnh: ${e.toString()}', name: 'RegisterScreen', error: e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi khi tải ảnh lên: ${e.toString()}')),
       );
@@ -92,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(
           type == 'avatar' ? 'Ảnh đại diện' :
-          type == 'payimg' ? 'Ảnh thanh toán' : 'Mã QR',
+          type == 'qrcode' ? 'Mã QR' : '',
           style: const TextStyle(fontSize: 16),
         ),
         const SizedBox(height: 8),
@@ -130,11 +134,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
+            developer.log('Lỗi xác thực: ${state.message}', name: 'RegisterScreen', error: state.message);
             setState(() => _isLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
           } else if (state is Authenticated) {
+            developer.log('Đăng ký thành công, chuyển về màn hình trước', name: 'RegisterScreen');
             Navigator.pop(context);
           }
         },
@@ -287,8 +293,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    _buildImagePicker('payimg', _payimgImage),
-                    const SizedBox(height: 16),
                     _buildImagePicker('qrcode', _qrcodeImage),
                     const SizedBox(height: 24),
                     BlocBuilder<AuthBloc, AuthState>(
@@ -297,17 +301,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: _isLoading
                               ? null
                               : () async {
+                                  developer.log('Bắt đầu xử lý đăng ký', name: 'RegisterScreen');
                                   if (_formKey.currentState!.validate()) {
+                                    developer.log('Form hợp lệ, bắt đầu upload ảnh', name: 'RegisterScreen');
                                     setState(() => _isLoading = true);
                                     
                                     final avatarUrl = await _uploadImage(_avatarImage);
-                                    final payimgUrl = await _uploadImage(_payimgImage);
                                     final qrcodeUrl = await _uploadImage(_qrcodeImage);
 
-                                    if (avatarUrl == null || payimgUrl == null || qrcodeUrl == null) {
+                                    if (avatarUrl == null || qrcodeUrl == null) {
+                                      developer.log('Upload ảnh thất bại', name: 'RegisterScreen');
                                       setState(() => _isLoading = false);
                                       return;
                                     }
+
+                                    developer.log('Upload ảnh thành công, bắt đầu tạo tài khoản', name: 'RegisterScreen');
+                                    developer.log('Thông tin đăng ký: Email: ${_emailController.text}, Name: ${_nameController.text}, Phone: ${_phoneController.text}', name: 'RegisterScreen');
 
                                     context.read<AuthBloc>().add(
                                           SignUpEvent(
@@ -317,10 +326,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             phone: _phoneController.text,
                                             address: _addressController.text,
                                             avatar: avatarUrl,
-                                            payimg: payimgUrl,
                                             qrcode: qrcodeUrl,
                                           ),
                                         );
+                                  } else {
+                                    developer.log('Form không hợp lệ', name: 'RegisterScreen');
                                   }
                                 },
                           style: ElevatedButton.styleFrom(

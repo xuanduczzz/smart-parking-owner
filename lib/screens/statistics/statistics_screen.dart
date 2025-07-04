@@ -84,7 +84,7 @@ class StatisticsScreen extends StatelessWidget {
                             ),
                             DropdownButton<String>(
                               value: state.selectedPeriod,
-                              items: ['Ngày', 'Tháng', 'Năm'].map((String value) {
+                              items: ['Giờ', 'Ngày', 'Tháng', 'Năm'].map((String value) {
                                 return DropdownMenuItem<String>(
                                   value: value,
                                   child: Text(value),
@@ -104,63 +104,63 @@ class StatisticsScreen extends StatelessWidget {
                         if (state.reservationsByPeriod.isNotEmpty) ...[
                           SizedBox(
                             height: 300,
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: state.reservationsByPeriod.values
-                                    .reduce((a, b) => a > b ? a : b)
-                                    .toDouble(),
-                                barGroups: state.reservationsByPeriod.entries
-                                    .map((entry) {
-                                  return BarChartGroupData(
-                                    x: state.reservationsByPeriod.keys
-                                        .toList()
-                                        .indexOf(entry.key),
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: entry.value.toDouble(),
-                                        color: Colors.blue,
-                                        width: 20,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: SizedBox(
+                                width: (state.reservationsByPeriod.length * 50).toDouble().clamp(MediaQuery.of(context).size.width, double.infinity),
+                                child: BarChart(
+                                  BarChartData(
+                                    alignment: BarChartAlignment.spaceAround,
+                                    maxY: state.reservationsByPeriod.values
+                                        .reduce((a, b) => a > b ? a : b)
+                                        .toDouble(),
+                                    barGroups: state.reservationsByPeriod.entries
+                                        .map((entry) {
+                                      return BarChartGroupData(
+                                        x: state.reservationsByPeriod.keys
+                                            .toList()
+                                            .indexOf(entry.key),
+                                        barRods: [
+                                          BarChartRodData(
+                                            toY: entry.value.toDouble(),
+                                            color: Colors.blue,
+                                            width: 20,
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                    titlesData: FlTitlesData(
+                                      show: true,
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          getTitlesWidget: (value, meta) {
+                                            if (value >= 0 && value < state.reservationsByPeriod.length) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(top: 8.0),
+                                                child: Text(
+                                                  state.reservationsByPeriod.keys.elementAt(value.toInt()),
+                                                  style: const TextStyle(fontSize: 10),
+                                                ),
+                                              );
+                                            }
+                                            return const Text('');
+                                          },
+                                        ),
                                       ),
-                                    ],
-                                  );
-                                }).toList(),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        if (value >= 0 &&
-                                            value <
-                                                state.reservationsByPeriod
-                                                    .length) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 8.0),
-                                            child: Text(
-                                              state.reservationsByPeriod.keys
-                                                  .elementAt(value.toInt()),
-                                              style: const TextStyle(
-                                                  fontSize: 10),
-                                            ),
-                                          );
-                                        }
-                                        return const Text('');
-                                      },
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 40,
+                                        ),
+                                      ),
+                                      topTitles: AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      rightTitles: AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
                                     ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                    ),
-                                  ),
-                                  topTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
                                   ),
                                 ),
                               ),
@@ -179,72 +179,71 @@ class StatisticsScreen extends StatelessWidget {
                           const SizedBox(height: 16),
                           SizedBox(
                             height: 300,
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: state.revenueByPeriod.values
-                                    .reduce((a, b) => a > b ? a : b),
-                                barGroups: state.revenueByPeriod.entries
-                                    .map((entry) {
-                                  return BarChartGroupData(
-                                    x: state.revenueByPeriod.keys
-                                        .toList()
-                                        .indexOf(entry.key),
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: entry.value,
-                                        color: Colors.green,
-                                        width: 20,
-                                      ),
-                                    ],
-                                  );
-                                }).toList(),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        if (value >= 0 &&
-                                            value <
-                                                state.revenueByPeriod.length) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 8.0),
-                                            child: Text(
-                                              state.revenueByPeriod.keys
-                                                  .elementAt(value.toInt()),
-                                              style: const TextStyle(
-                                                  fontSize: 10),
-                                            ),
-                                          );
-                                        }
-                                        return const Text('');
-                                      },
-                                    ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 60,
-                                      getTitlesWidget: (value, meta) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 8.0),
-                                          child: Text(
-                                            value.toInt().toString(),
-                                            style: const TextStyle(
-                                                fontSize: 10),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: SizedBox(
+                                width: (state.revenueByPeriod.length * 50).toDouble().clamp(MediaQuery.of(context).size.width, double.infinity),
+                                child: BarChart(
+                                  BarChartData(
+                                    alignment: BarChartAlignment.spaceAround,
+                                    maxY: state.revenueByPeriod.values
+                                        .reduce((a, b) => a > b ? a : b),
+                                    barGroups: state.revenueByPeriod.entries
+                                        .map((entry) {
+                                      return BarChartGroupData(
+                                        x: state.revenueByPeriod.keys
+                                            .toList()
+                                            .indexOf(entry.key),
+                                        barRods: [
+                                          BarChartRodData(
+                                            toY: entry.value,
+                                            color: Colors.green,
+                                            width: 20,
                                           ),
-                                        );
-                                      },
+                                        ],
+                                      );
+                                    }).toList(),
+                                    titlesData: FlTitlesData(
+                                      show: true,
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          getTitlesWidget: (value, meta) {
+                                            if (value >= 0 && value < state.revenueByPeriod.length) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(top: 8.0),
+                                                child: Text(
+                                                  state.revenueByPeriod.keys.elementAt(value.toInt()),
+                                                  style: const TextStyle(fontSize: 10),
+                                                ),
+                                              );
+                                            }
+                                            return const Text('');
+                                          },
+                                        ),
+                                      ),
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 60,
+                                          getTitlesWidget: (value, meta) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(right: 8.0),
+                                              child: Text(
+                                                value.toInt().toString(),
+                                                style: const TextStyle(fontSize: 10),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      topTitles: AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      rightTitles: AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
                                     ),
-                                  ),
-                                  topTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
                                   ),
                                 ),
                               ),

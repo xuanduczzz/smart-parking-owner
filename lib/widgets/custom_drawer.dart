@@ -95,7 +95,6 @@ class CustomDrawer extends StatelessWidget {
                 await FirebaseAuth.instance.signOut();
                 if (context.mounted) {
                   Navigator.pop(context); // Đóng drawer
-                  // Xóa tất cả các màn hình trong stack và chuyển về màn hình login
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => const LoginScreen()),
